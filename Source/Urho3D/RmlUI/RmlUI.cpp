@@ -268,6 +268,7 @@ RmlUI::RmlUI(Context* context, const char* name)
     // Initializing first instance of RmlUI, initialize backend library as well.
     if (rmlInstanceCounter.fetch_add(1) == 0)
     {
+        Rml::SetRenderInterface(new Detail::RmlRenderer(context_));
         Rml::SetSystemInterface(new Detail::RmlSystem(context_));
         Rml::SetFileInterface(new Detail::RmlFile(context_));
         Rml::Initialise();
@@ -277,10 +278,7 @@ RmlUI::RmlUI(Context* context, const char* name)
 
         RmlNavigable::Register();
     }
-    
-    // Each RmlUI object should have unique renderer so instances do not share RenderManagers.
-    rmlRenderer_ = new Detail::RmlRenderer(context_);
-    rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), ToRmlUi(GetDesiredCanvasSize()), rmlRenderer_));
+    rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), ToRmlUi(GetDesiredCanvasSize())));
     rmlContext_->SetOwnerSubsystem(this);
 
     if (auto* ui = GetSubsystem<RmlUI>())
@@ -318,21 +316,17 @@ RmlUI::~RmlUI()
             URHO3D_LOGERROR("Removal of RmlUI context {} failed.", rmlContext_->GetName());
     }
     rmlContext_ = nullptr;
-    
-    if(rmlRenderer_ != nullptr)
-    {
-        delete rmlRenderer_;
-        rmlRenderer_ = nullptr;
-    }
 
     if (rmlInstanceCounter.fetch_sub(1) == 1)
     {
         // Freeing last instance of RmlUI, deinitialize backend library.
         Rml::Factory::RegisterEventListenerInstancer(nullptr); // Set to a static object instance because there is no getter to delete it.
+        auto* renderer = Rml::GetRenderInterface();
         auto* system = Rml::GetSystemInterface();
         auto* file = Rml::GetFileInterface();
         Rml::ReleaseTextures();
         Rml::Shutdown();
+        delete renderer;
         delete system;
         delete file;
     }
@@ -700,11 +694,12 @@ void RmlUI::Render()
     }
     renderContext->SetFullViewport();
 
-    if (rmlRenderer_)
+    if (auto rmlRenderer = dynamic_cast<Detail::RmlRenderer*>(Rml::GetRenderInterface()))
     {
-        rmlRenderer_->BeginRendering();
+        rmlContext_->GetRenderManager().SetViewport(rmlContext_->GetDimensions());
+        rmlRenderer->BeginRendering();
         rmlContext_->Render();
-        rmlRenderer_->EndRendering();
+        rmlRenderer->EndRendering();
     }
 }
 

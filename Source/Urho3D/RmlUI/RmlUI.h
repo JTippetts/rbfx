@@ -41,7 +41,7 @@
 namespace Urho3D
 {
 
-namespace Detail { class RmlContext; class RmlPlugin; class RmlRenderer; }
+namespace Detail { class RmlContext; class RmlPlugin; }
 
 struct RmlCanvasResizedArgs
 {
@@ -160,8 +160,6 @@ private:
     Detail::RmlContext* rmlContext_ = nullptr;
     /// Surface where UI will be rendered into.
     WeakPtr<RenderSurface> renderSurface_;
-    /// Unique RmlRenderer for this instance
-    Detail::RmlRenderer *rmlRenderer_ = nullptr;
     /// Color used to clear render surface if not rendering into backbuffer.
     Color clearColor_ = Color::TRANSPARENT_BLACK;
     /// Flag indicating RmlUi debugger is already initialized.

@@ -60,6 +60,22 @@ struct RmlVertex
     Vector2 texCoord_;
 };
 
+/// rbfx Vector3 to Rml Vector2f
+Rml::Vector2f Vector3fToRmlVector2f(const Vector3 &vector) { return Rml::Vector2f(vector.x_, vector.y_); }
+
+/// Internal compiled geometry holder.
+struct CompiledRmlGeometry
+{
+    ea::vector<RmlVertex> vertices_;
+    ea::vector<unsigned int> indices_;
+};
+
+/// Wrap CompiledrmlGeometry to RmlUI handle
+Rml::CompiledGeometryHandle WrapGeometryHandle(CompiledRmlGeometry* geometry) { return reinterpret_cast<Rml::CompiledGeometryHandle>(geometry); }
+
+/// Unwrap RmlUI handle to CompiledRmlGeometry pointer
+CompiledRmlGeometry* UnwrapGeometryHandle(Rml::CompiledGeometryHandle geometry) { return reinterpret_cast<CompiledRmlGeometry*>(geometry); }
+
 /// Internal RmlUI texture holder.
 struct CachedRmlTexture
 {
@@ -196,45 +212,69 @@ Material* RmlRenderer::GetBatchMaterial(Texture2D* texture)
         return diffMapMaterial_;
 }
 
-void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices,
-    Rml::TextureHandle textureHandle, const Rml::Vector2f& translation)
+Rml::CompiledGeometryHandle RmlRenderer::CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices)
+{
+    auto compiledGeometry = new CompiledRmlGeometry{};
+    compiledGeometry->vertices_.resize(vertices.size());
+    compiledGeometry->indices_.resize(indices.size());
+    
+    for (unsigned i = 0; i < vertices.size(); ++i)
+    {
+        RmlVertex &vertex = compiledGeometry->vertices_[i];
+        vertex.position_.x_ = vertices[i].position.x;
+        vertex.position_.y_ = vertices[i].position.y;
+        vertex.position_.z_ = 0.0f;
+        Rml::Colourb color = vertices[i].colour.ToNonPremultiplied();
+        vertex.color_ = (color.alpha << 24u) | (color.blue << 16u) | (color.green << 8u) | color.red;
+        vertex.texCoord_.x_ = vertices[i].tex_coord.x;
+        vertex.texCoord_.y_ = vertices[i].tex_coord.y;
+    }
+
+    for (unsigned i = 0; i < indices.size(); ++i)
+        compiledGeometry->indices_[i] = indices[i];
+        
+    return WrapGeometryHandle(compiledGeometry);
+}
+
+void RmlRenderer::RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture)
 {
     auto renderDevice = GetSubsystem<RenderDevice>();
     RenderContext* renderContext = renderDevice->GetRenderContext();
-
-    const auto [firstVertex, vertexData] = vertexBuffer_->AddVertices(num_vertices);
-    const auto [firstIndex, indexData] = indexBuffer_->AddIndices(num_indices);
-
+    
+    CompiledRmlGeometry *compiledGeometry = UnwrapGeometryHandle(geometry);
+    
+    const auto [firstVertex, vertexData] = vertexBuffer_->AddVertices(compiledGeometry->vertices_.size());
+    const auto [firstIndex, indexData] = indexBuffer_->AddIndices(compiledGeometry->indices_.size());
+    
     RmlVertex* destVertices = reinterpret_cast<RmlVertex*>(vertexData);
-    for (unsigned i = 0; i < num_vertices; ++i)
+    for (unsigned i = 0; i < compiledGeometry->vertices_.size(); ++i)
     {
-        destVertices[i].position_.x_ = vertices[i].position.x + translation.x;
-        destVertices[i].position_.y_ = vertices[i].position.y + translation.y;
+        destVertices[i].position_.x_ = compiledGeometry->vertices_[i].position_.x_ + translation.x;
+        destVertices[i].position_.y_ = compiledGeometry->vertices_[i].position_.y_ + translation.y;
         destVertices[i].position_.z_ = 0.0f;
-        const Rml::Colourb& color = vertices[i].colour;
-        destVertices[i].color_ = (color.alpha << 24u) | (color.blue << 16u) | (color.green << 8u) | color.red;
-        destVertices[i].texCoord_.x_ = vertices[i].tex_coord.x;
-        destVertices[i].texCoord_.y_ = vertices[i].tex_coord.y;
+        destVertices[i].color_ = compiledGeometry->vertices_[i].color_;
+        destVertices[i].texCoord_.x_ = compiledGeometry->vertices_[i].texCoord_.x_;
+        destVertices[i].texCoord_.y_ = compiledGeometry->vertices_[i].texCoord_.y_;
     }
 
     unsigned* destIndices = reinterpret_cast<unsigned*>(indexData);
-    for (unsigned i = 0; i < num_indices; ++i)
-        destIndices[i] = indices[i] + firstVertex;
-
+    for (unsigned i = 0; i < compiledGeometry->indices_.size(); ++i)
+        destIndices[i] = compiledGeometry->indices_[i] + firstVertex;
+        
     // Restore texture data if lost
-    CachedRmlTexture* cachedTexture = UnwrapTextureHandle(textureHandle);
-    Texture2D* texture = cachedTexture ? cachedTexture->texture_ : nullptr;
-    if (texture && texture->IsDataLost())
+    CachedRmlTexture* cachedTexture = UnwrapTextureHandle(texture);
+    Texture2D* texture2D = cachedTexture ? cachedTexture->texture_ : nullptr;
+    if (texture2D && texture2D->IsDataLost())
     {
-        texture->SetData(cachedTexture->image_);
-        texture->ClearDataLost();
+        texture2D->SetData(cachedTexture->image_);
+        texture2D->ClearDataLost();
     }
 
-    Material* material = GetBatchMaterial(texture);
+    Material* material = GetBatchMaterial(texture2D);
     Pass* pass = material->GetDefaultPass();
 
-    const unsigned samplerStateHash = texture ? texture->GetSamplerStateDesc().ToHash() : 0;
-    batchStateCreateContext_.defaultSampler_ = texture ? &texture->GetSamplerStateDesc() : nullptr;
+    const unsigned samplerStateHash = texture2D ? texture2D->GetSamplerStateDesc().ToHash() : 0;
+    batchStateCreateContext_.defaultSampler_ = texture2D ? &texture2D->GetSamplerStateDesc() : nullptr;
 
     const UIBatchStateKey batchStateKey{isRenderSurfaceSRGB_, renderContext->GetCurrentRenderTargetsDesc(), material,
         pass, BLEND_ALPHA, samplerStateHash};
@@ -253,8 +293,8 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
 
     if (texture)
     {
-        drawQueue_->AddShaderResource(ShaderResources::Albedo, texture);
-        textures_.emplace_back(texture);
+        drawQueue_->AddShaderResource(ShaderResources::Albedo, texture2D);
+        textures_.emplace_back(texture2D);
     }
     drawQueue_->CommitShaderResources();
 
@@ -276,7 +316,13 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
         drawQueue_->CommitShaderParameterGroup(SP_OBJECT);
     }
 
-    drawQueue_->DrawIndexed(firstIndex, num_indices);
+    drawQueue_->DrawIndexed(firstIndex, compiledGeometry->indices_.size());
+}
+
+void RmlRenderer::ReleaseGeometry(Rml::CompiledGeometryHandle geometry)
+{
+    CompiledRmlGeometry *compiledGeometry = UnwrapGeometryHandle(geometry);
+    delete compiledGeometry;
 }
 
 void RmlRenderer::EnableScissorRegion(bool enable)
@@ -284,12 +330,12 @@ void RmlRenderer::EnableScissorRegion(bool enable)
     scissorEnabled_ = enable;
 }
 
-void RmlRenderer::SetScissorRegion(int x, int y, int width, int height)
+void RmlRenderer::SetScissorRegion(Rml::Rectanglei region)
 {
-    scissor_.left_ = x;
-    scissor_.top_ = y;
-    scissor_.bottom_ = y + height;
-    scissor_.right_ = x + width;
+    scissor_.left_ = region.Left();
+    scissor_.top_ = region.Top();
+    scissor_.bottom_ = region.Bottom();
+    scissor_.right_ = region.Right();
 
     if (flipRect_)
     {
@@ -302,33 +348,64 @@ void RmlRenderer::SetScissorRegion(int x, int y, int width, int height)
     // TODO: Support transformed scissors by doing scissor test on CPU
 }
 
-bool RmlRenderer::LoadTexture(Rml::TextureHandle& textureOut, Rml::Vector2i& sizeOut, const Rml::String& source)
+void RmlRenderer::EnableClipMask(bool enable)
+{
+    EnableScissorRegion(enable);
+}
+
+void RmlRenderer::RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation)
+{
+    switch (operation)
+	{
+	case Rml::ClipMaskOperation::Set:
+	case Rml::ClipMaskOperation::Intersect:
+		// Intersect is considered like Set. This typically occurs in nested clipping situations, which never worked
+		// correctly in legacy.
+		break;
+	case Rml::ClipMaskOperation::SetInverse:
+		// Using features not supported in legacy, bail out.
+		return;
+	}
+
+	// New features can render more complex clip masks, while legacy only supported rectangle scissoring. Find the
+	// geometry's rectangular coverage.
+	const CompiledRmlGeometry* compiledGeometry = UnwrapGeometryHandle(geometry);
+    
+
+	Rml::Rectanglef rectangle = Rml::Rectanglef::FromPosition(Vector3fToRmlVector2f(compiledGeometry->vertices_[0].position_));
+	for (const RmlVertex& vertex : compiledGeometry->vertices_)
+		rectangle.Join(Vector3fToRmlVector2f(vertex.position_));
+	rectangle.Translate(translation);
+
+	const Rml::Rectanglei scissor = Rml::Rectanglei(rectangle);
+    SetScissorRegion(scissor);
+}
+
+Rml::TextureHandle RmlRenderer::LoadTexture(Rml::Vector2i& size, const Rml::String& source)
 {
     ResourceCache* cache = context_->GetSubsystem<ResourceCache>();
     Texture2D* texture = cache->GetResource<Texture2D>(source.c_str());
     if (texture)
     {
-        sizeOut.x = texture->GetWidth();
-        sizeOut.y = texture->GetHeight();
+        size.x = texture->GetWidth();
+        size.y = texture->GetHeight();
         texture->AddRef();
     }
     auto cachedTexture = new CachedRmlTexture{ nullptr, SharedPtr(texture) };
-    textureOut = WrapTextureHandle(cachedTexture);
-    return true;
+    return WrapTextureHandle(cachedTexture);
 }
 
-bool RmlRenderer::GenerateTexture(Rml::TextureHandle& handleOut, const Rml::byte* source, const Rml::Vector2i& size)
+Rml::TextureHandle RmlRenderer::GenerateTexture(Rml::Span<const Rml::byte> source, Rml::Vector2i size)
 {
     auto image = MakeShared<Image>(context_);
     image->SetSize(size.x, size.y, 4);
-    image->SetData(source);
+    image->SetData(source.data());
 
     auto texture = MakeShared<Texture2D>(context_);
     texture->SetData(image);
 
     auto cachedTexture = new CachedRmlTexture{ image, texture };
-    handleOut = WrapTextureHandle(cachedTexture);
-    return true;
+    return WrapTextureHandle(cachedTexture);
 }
 
 void RmlRenderer::ReleaseTexture(Rml::TextureHandle textureHandle)

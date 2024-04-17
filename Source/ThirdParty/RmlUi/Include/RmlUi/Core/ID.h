@@ -156,7 +156,12 @@ enum class PropertyId : uint8_t {
 	Focus,
 
 	Decorator,
+	MaskImage,
 	FontEffect,
+
+	Filter,
+	BackdropFilter,
+	BoxShadow,
 
 	FillImage,
 
@@ -174,6 +179,9 @@ enum class PropertyId : uint8_t {
 	NavRight,
 	NavDown,
 	NavLeft,
+
+	RmlUi_Language,
+	RmlUi_Direction,
 
 	NumDefinedIds,
 	FirstCustomId = NumDefinedIds,

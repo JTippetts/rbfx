@@ -26,44 +26,31 @@
  *
  */
 
-#ifndef RMLUI_CORE_DECORATORTILEDINSTANCER_H
-#define RMLUI_CORE_DECORATORTILEDINSTANCER_H
+#ifndef RMLUI_CORE_GEOMETRYBOXSHADOW_H
+#define RMLUI_CORE_GEOMETRYBOXSHADOW_H
 
-#include "../../Include/RmlUi/Core/DecoratorInstancer.h"
-#include "DecoratorTiled.h"
+#include "../../Include/RmlUi/Core/Types.h"
 
 namespace Rml {
 
-class StyleSheet;
+class Geometry;
+class CallbackTexture;
+class RenderManager;
 
-/**
-    @author Peter Curry
- */
-
-class DecoratorTiledInstancer : public DecoratorInstancer {
+class GeometryBoxShadow {
 public:
-	DecoratorTiledInstancer(size_t num_tiles);
-
-protected:
-	/// Adds the property declarations for a tile.
-	/// @param[in] name The name of the tile property.
-	/// @param[in] register_fit_modes If true, the tile will have the fit modes registered.
-	void RegisterTileProperty(const String& name, bool register_fit_modes = false);
-
-	/// Retrieves all the properties for a tile from the property dictionary.
-	/// @param[out] tile The tile structure for storing the tile properties.
-	/// @param[out] textures Holds the textures declared for the tile.
-	/// @param[in] properties The user-defined list of parameters for the decorator.
-	/// @param[in] instancer_interface An interface for querying the active style sheet.
-	bool GetTileProperties(DecoratorTiled::Tile* tiles, Texture* textures, size_t num_tiles_and_textures, const PropertyDictionary& properties,
-		const DecoratorInstancerInterface& instancer_interface) const;
-
-private:
-	struct TilePropertyIds {
-		PropertyId src, fit, align_x, align_y, orientation;
-	};
-
-	Vector<TilePropertyIds> tile_property_ids;
+	/// Generate the texture and geometry for a box shadow.
+	/// @param[out] out_shadow_geometry The target geometry.
+	/// @param[out] out_shadow_texture The target texture, assumes pointer stability during the lifetime of the shadow geometry.
+	/// @param[in] render_manager The render manager to generate the shadow for.
+	/// @param[in] element The element to generate the shadow for.
+	/// @param[in] background_border_geometry The geometry of the background and border, assumed to already have been generated. Assumes pointer
+	/// stability during the lifetime of the shadow geometry.
+	/// @param[in] shadow_list The list of box-shadows to generate.
+	/// @param[in] border_radius The border radius of the element.
+	/// @param[in] opacity The opacity of the element.
+	static void Generate(Geometry& out_shadow_geometry, CallbackTexture& out_shadow_texture, RenderManager& render_manager, Element* element,
+		Geometry& background_border_geometry, BoxShadowList shadow_list, Vector4f border_radius, float opacity);
 };
 
 } // namespace Rml

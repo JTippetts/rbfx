@@ -50,7 +50,7 @@ class Decorator;
 class ElementInstancer;
 class EventDispatcher;
 class EventListener;
-class ElementDecoration;
+class ElementBackgroundBorder;
 class ElementDefinition;
 class ElementDocument;
 class ElementScroll;
@@ -60,6 +60,7 @@ class InlineLevelBox;
 class ReplacedBox;
 class PropertiesIteratorView;
 class PropertyDictionary;
+class RenderManager;
 class StyleSheet;
 class StyleSheetContainer;
 class TransformState;
@@ -336,6 +337,9 @@ public:
 	/// Returns the element's context.
 	/// @return The context this element's document exists within.
 	Context* GetContext() const;
+	/// Returns the element's render manager.
+	/// @return The render manager responsible for this element.
+	RenderManager* GetRenderManager() const;
 
 	/** @name DOM Properties
 	 */
@@ -561,6 +565,9 @@ public:
 	/// @param[in] selectors The selector or comma-separated selectors to match against.
 	/// @performance Prefer GetElementById/TagName/ClassName whenever possible.
 	void QuerySelectorAll(ElementList& elements, const String& selectors);
+	/// Check if the element matches the given RCSS selector query.
+	/// @return True if the element matches the given RCSS selector query, false otherwise.
+	bool Matches(const String& selectors);
 
 	//@}
 
@@ -572,8 +579,8 @@ public:
 	EventDispatcher* GetEventDispatcher() const;
 	/// Returns event types with number of listeners for debugging.
 	String GetEventDispatcherSummary() const;
-	/// Access the element decorators.
-	ElementDecoration* GetElementDecoration() const;
+	/// Access the element background and border.
+	ElementBackgroundBorder* GetElementBackgroundBorder() const;
 	/// Returns the element's scrollbar functionality.
 	ElementScroll* GetElementScroll() const;
 	/// Returns the element's nearest scroll container that can be scrolled, if any.

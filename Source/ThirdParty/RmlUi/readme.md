@@ -18,9 +18,16 @@ RmlUi is based around the XHTML1 and CSS2 standards while borrowing features fro
 
 Documentation is located at https://mikke89.github.io/RmlUiDoc/
 
+---
+
+***Note:*** Expect breaking changes on the master branch as we are moving towards the release of RmlUi 6.0. This may require changes to projects using older releases, please take a look at the [breaking changes](changelog.md#breaking-changes) in the changelog. Meanwhile, documentation is being worked on for the new features. 
+
+---
+
+
 ## Features
 
-- Cross platform architecture: Windows, macOS, Linux, iOS, etc.
+- Cross-platform architecture: Windows, macOS, Linux, iOS, etc.
 - Dynamic layout system.
 - Full animation and transform support.
 - Efficient application-wide styling, with a custom-built templating engine.
@@ -105,7 +112,7 @@ Make sure to replace the path to vcpkg. When this completes, feel free to test t
 
 #### Conan
 
-RmlUi is readily available from [ConanCenter](https://conan.io/center/rmlui).
+RmlUi is readily available from [ConanCenter](https://conan.io/center/recipes/rmlui).
 
 
 ## Integrating RmlUi
@@ -125,7 +132,7 @@ Several [samples](Samples/) demonstrate everything from basic integration to mor
 
 To ease the integration of RmlUi, the library includes [many backends](Backends/) adding support for common renderers and platforms. The following terms are used here:
 
-- ***Renderer***: Implements the [render interface](https://mikke89.github.io/RmlUiDoc/pages/cpp_manual/interfaces/render) for a given rendering API, and provides initialization code when necessary.
+- ***Renderer***: Implements the [render interface](https://mikke89.github.io/RmlUiDoc/pages/cpp_manual/interfaces/render.html) for a given rendering API, and provides initialization code when necessary.
 - ***Platform***: Implements the [system interface](https://mikke89.github.io/RmlUiDoc/pages/cpp_manual/interfaces/system.html) for a given platform (operating system or window library), and adds procedures for providing input to RmlUi contexts.
 - ***Backend***: Combines a renderer and a platform for a complete windowing framework sample, implementing the basic [Backend interface](Backends/RmlUi_Backend.h).
 
@@ -135,16 +142,18 @@ The provided backends on the other hand are not intended to be used directly by 
 
 ### Renderers
 
-| Renderer features | Basic rendering | Stencil | Transforms | Built-in image support                                                          |
-|-------------------|:---------------:|---------|:----------:|---------------------------------------------------------------------------------|
-| OpenGL 2 (GL2)    |        ✔️       |    ✔️    |      ✔️    | Uncompressed TGA                                                                |
-| OpenGL 3 (GL3)    |        ✔️       |    ✔️    |      ✔️    | Uncompressed TGA                                                                |
-| Vulkan (VK)       |        ✔️       |    ✔️    |      ✔️    | Uncompressed TGA                                                                |
-| SDLrenderer       |        ✔️       |    ❌    |      ❌    | Based on [SDL_image](https://wiki.libsdl.org/SDL_image/FrontPage) |
+| Renderer features | Basic rendering | Transforms | Clip masks | Filters | Shaders | Built-in image support                                            |
+|-------------------|:---------------:|:----------:|:----------:|:-------:|:-------:|-------------------------------------------------------------------|
+| OpenGL 2 (GL2)    |       ✔️        |     ✔️     |     ✔️     |    ❌    |    ❌    | Uncompressed TGA                                                  |
+| OpenGL 3 (GL3)    |       ✔️        |     ✔️     |     ✔️     |  ️ ✔️   |  ️ ✔️   | Uncompressed TGA                                                  |
+| Vulkan (VK)       |       ✔️        |     ✔️     |     ❌      |    ❌    |    ❌    | Uncompressed TGA                                                  |
+| SDLrenderer       |       ✔️        |     ❌      |     ❌      |    ❌    |    ❌    | Based on [SDL_image](https://wiki.libsdl.org/SDL_image/FrontPage) |
 
 **Basic rendering**: Render geometry with colors, textures, and rectangular clipping (scissoring). Sufficient for basic 2d-layouts.\
-**Stencil**: Enables proper clipping when transforms are enabled.\
 **Transforms**: Enables the `transform` and `perspective` properties to take effect.\
+**Clip masks**: Enables proper clipping of transformed elements and elements with border-radius.\
+**Filters**: Support for all built-in filter functions, such as blur and drop-shadow.\
+**Shaders**: Support for all built-in decorators that require shaders, such as `linear-gradient` and `radial-gradient`. Other advanced rendering functions are also implemented, including masking and render-to-texture support, for features such as `mask-image` and `box-shadow`.\
 **Built-in image support**: This only shows the supported formats built-in to the renderer, users are encouraged to derive from and extend the render interface to add support for their desired image formats.
 
 ### Platforms
@@ -366,6 +375,9 @@ Users can now edit the text field to change the animal. The data bindings ensure
 **Installer software by [@xland](https://github.com/xland)**\
 ![xland installer collage](https://user-images.githubusercontent.com/5490330/230487763-ec4d28e7-7ec6-44af-89f2-d2cbad8f44c1.png)
 
+**[TruckersMP](https://truckersmp.com/) - a multiplayer mod for truck simulators - chat box in RmlUi**\
+![TruckersMP](https://raw.githubusercontent.com/mikke89/RmlUiDoc/8ce505124daec1a9fdff0327be495fc2e43a37cf/assets/gallery/truckers_mp.webp)
+
 **Form controls from the 'demo' sample**\
 ![Form controls](https://github.com/mikke89/RmlUiDoc/blob/3f319d8464e73b821179ff8d20537013af5b9810/assets/gallery/forms.png)
 
@@ -452,6 +464,7 @@ See [Source/Debugger/LICENSE.txt](Source/Debugger/LICENSE.txt) - SIL Open Font L
 See
 - [Samples/assets/LICENSE.txt](Samples/assets/LICENSE.txt)
 - [Samples/basic/bitmapfont/data/LICENSE.txt](Samples/basic/bitmapfont/data/LICENSE.txt)
+- [Samples/basic/harfbuzzshaping/data/LICENSE.txt](Samples/basic/harfbuzzshaping/data/LICENSE.txt)
 - [Samples/basic/lottie/data/LICENSE.txt](Samples/basic/lottie/data/LICENSE.txt)
 - [Samples/basic/svg/data/LICENSE.txt](Samples/basic/svg/data/LICENSE.txt)
 

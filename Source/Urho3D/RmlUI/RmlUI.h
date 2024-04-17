@@ -35,12 +35,13 @@
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/Context.h>
+#include <RmlUi/Core/RenderManager.h>
 
 
 namespace Urho3D
 {
 
-namespace Detail { class RmlContext; class RmlPlugin; }
+namespace Detail { class RmlContext; class RmlPlugin; class RmlRenderer; }
 
 struct RmlCanvasResizedArgs
 {
@@ -159,6 +160,8 @@ private:
     Detail::RmlContext* rmlContext_ = nullptr;
     /// Surface where UI will be rendered into.
     WeakPtr<RenderSurface> renderSurface_;
+    /// Unique RmlRenderer for this instance
+    Detail::RmlRenderer *rmlRenderer_ = nullptr;
     /// Color used to clear render surface if not rendering into backbuffer.
     Color clearColor_ = Color::TRANSPARENT_BLACK;
     /// Flag indicating RmlUi debugger is already initialized.
@@ -205,7 +208,7 @@ class RmlContext : public Rml::Context
 {
 public:
     /// Construct.
-    explicit RmlContext(const ea::string& name) : Rml::Context(name) { }
+    explicit RmlContext(const ea::string& name, Rml::RenderManager *renderManager) : Rml::Context(name, renderManager) { }
     /// Set owner subsystem pointer.
     void SetOwnerSubsystem(RmlUI* ui) { ownerSubsystem_ = ui; }
     /// Get owner subsystem pointer.

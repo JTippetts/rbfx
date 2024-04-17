@@ -26,48 +26,46 @@
  *
  */
 
-#include "DecoratorTiledBoxInstancer.h"
-#include "DecoratorTiledBox.h"
+#include "LogDefault.h"
+#include "../../Include/RmlUi/Core/StringUtilities.h"
+
+#ifdef RMLUI_PLATFORM_WIN32
+	#include <windows.h>
+#else
+	#include <stdio.h>
+#endif
 
 namespace Rml {
 
-DecoratorTiledBoxInstancer::DecoratorTiledBoxInstancer() : DecoratorTiledInstancer(9)
+#ifdef RMLUI_PLATFORM_WIN32
+bool LogDefault::LogMessage(Log::Type type, const String& message)
 {
-	RegisterTileProperty("top-left-image");
-	RegisterTileProperty("top-right-image");
-	RegisterTileProperty("bottom-left-image");
-	RegisterTileProperty("bottom-right-image");
+	#if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP)
+	if (type == Log::LT_ASSERT)
+	{
+		String message_user = CreateString(1024, "%s\nWould you like to interrupt execution?", message.c_str());
 
-	RegisterTileProperty("left-image");
-	RegisterTileProperty("right-image");
-	RegisterTileProperty("top-image");
-	RegisterTileProperty("bottom-image");
-
-	RegisterTileProperty("center-image");
-
-	RegisterShorthand("decorator",
-		"top-left-image, top-image, top-right-image, left-image, center-image, right-image, bottom-left-image, bottom-image, bottom-right-image",
-		ShorthandType::RecursiveCommaSeparated);
+		// Return TRUE if the user presses NO (continue execution)
+		return (IDNO == MessageBoxA(nullptr, message_user.c_str(), "Assertion Failure", MB_YESNO | MB_ICONSTOP | MB_DEFBUTTON2 | MB_TASKMODAL));
+	}
+	else
+	#endif
+	{
+		OutputDebugStringA(message.c_str());
+		OutputDebugStringA("\r\n");
+	}
+	return true;
 }
-
-DecoratorTiledBoxInstancer::~DecoratorTiledBoxInstancer() {}
-
-SharedPtr<Decorator> DecoratorTiledBoxInstancer::InstanceDecorator(const String& /*name*/, const PropertyDictionary& properties,
-	const DecoratorInstancerInterface& instancer_interface)
+#else
+bool LogDefault::LogMessage(Log::Type /*type*/, const String& message)
 {
-	constexpr size_t num_tiles = 9;
-
-	DecoratorTiled::Tile tiles[num_tiles];
-	Texture textures[num_tiles];
-
-	if (!GetTileProperties(tiles, textures, num_tiles, properties, instancer_interface))
-		return nullptr;
-
-	auto decorator = MakeShared<DecoratorTiledBox>();
-	if (!decorator->Initialise(tiles, textures))
-		return nullptr;
-
-	return decorator;
+	#ifdef RMLUI_PLATFORM_EMSCRIPTEN
+	puts(message.c_str());
+	#else
+	fprintf(stderr, "%s\n", message.c_str());
+	#endif
+	return true;
 }
+#endif
 
 } // namespace Rml

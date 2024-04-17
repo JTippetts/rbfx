@@ -26,48 +26,28 @@
  *
  */
 
-#include "../../Include/RmlUi/Core/DecoratorInstancer.h"
-#include "../../Include/RmlUi/Core/StyleSheet.h"
+#include "../../Include/RmlUi/Core/EffectSpecification.h"
+#include "../../Include/RmlUi/Core/PropertyDefinition.h"
 
 namespace Rml {
 
-DecoratorInstancer::DecoratorInstancer() : properties(10, 10) {}
+EffectSpecification::EffectSpecification() : properties(10, 10) {}
 
-DecoratorInstancer::~DecoratorInstancer() {}
+EffectSpecification::~EffectSpecification() {}
 
-const PropertySpecification& DecoratorInstancer::GetPropertySpecification() const
+const PropertySpecification& EffectSpecification::GetPropertySpecification() const
 {
 	return properties;
 }
 
-PropertyDefinition& DecoratorInstancer::RegisterProperty(const String& property_name, const String& default_value)
+PropertyDefinition& EffectSpecification::RegisterProperty(const String& property_name, const String& default_value)
 {
 	return properties.RegisterProperty(property_name, default_value, false, false);
 }
 
-ShorthandId DecoratorInstancer::RegisterShorthand(const String& shorthand_name, const String& property_names, ShorthandType type)
+ShorthandId EffectSpecification::RegisterShorthand(const String& shorthand_name, const String& property_names, ShorthandType type)
 {
 	return properties.RegisterShorthand(shorthand_name, property_names, type);
-}
-
-const Sprite* DecoratorInstancerInterface::GetSprite(const String& name) const
-{
-	return style_sheet.GetSprite(name);
-}
-
-Texture DecoratorInstancerInterface::GetTexture(const String& filename) const
-{
-	Texture texture;
-
-	if (!property_source)
-	{
-		Log::Message(Log::LT_WARNING, "Texture name '%s' in decorator could not be loaded, no property source available.", filename.c_str());
-		return texture;
-	}
-
-	texture.Set(filename, property_source->path);
-
-	return texture;
 }
 
 } // namespace Rml

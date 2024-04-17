@@ -26,65 +26,69 @@
  *
  */
 
-#ifndef RMLUI_CORE_ELEMENTDECORATION_H
-#define RMLUI_CORE_ELEMENTDECORATION_H
+#ifndef RMLUI_CORE_ELEMENTEFFECTS_H
+#define RMLUI_CORE_ELEMENTEFFECTS_H
 
+#include "../../Include/RmlUi/Core/CompiledFilterShader.h"
 #include "../../Include/RmlUi/Core/Types.h"
 
 namespace Rml {
 
 class Decorator;
 class Element;
+class Filter;
+
+enum class RenderStage { Enter, Decoration, Exit };
 
 /**
-    Manages an elements decorator state
-
-    @author Lloyd Weehuizen
+    Manages and renders an element's effects: decorators, filters, backdrop filters, and mask images.
  */
 
-class ElementDecoration {
+class ElementEffects {
 public:
-	/// Constructor
-	/// @param element The element this decorator with acting on
-	ElementDecoration(Element* element);
-	~ElementDecoration();
+	ElementEffects(Element* element);
+	~ElementEffects();
 
-	/// Instances decorators if necessary.
-	void InstanceDecorators();
+	void InstanceEffects();
 
-	/// Renders all appropriate decorators.
-	void RenderDecorators();
+	void RenderEffects(RenderStage render_stage);
 
-	/// Mark decorators as dirty and force them to reset themselves.
-	void DirtyDecorators();
-	/// Mark the element data of decorators as dirty.
-	void DirtyDecoratorsData();
+	// Mark effects as dirty and force them to reset themselves.
+	void DirtyEffects();
+	// Mark the element data of effects as dirty.
+	void DirtyEffectsData();
 
 private:
-	// Releases existing decorators and loads all decorators required by the element's definition.
-	bool ReloadDecorators();
-	// Releases existing element data of decorators, and regenerates it.
-	void ReloadDecoratorsData();
-	// Releases all existing decorators and frees their data.
-	void ReleaseDecorators();
+	// Releases existing element data of effects, and regenerates it.
+	void ReloadEffectsData();
+	// Releases all existing effects and their element data.
+	void ReleaseEffects();
 
-	struct DecoratorHandle {
+	struct DecoratorEntry {
 		SharedPtr<const Decorator> decorator;
 		DecoratorDataHandle decorator_data;
+		BoxArea paint_area;
 	};
+	using DecoratorEntryList = Vector<DecoratorEntry>;
 
-	using DecoratorHandleList = Vector<DecoratorHandle>;
+	struct FilterEntry {
+		SharedPtr<const Filter> filter;
+		CompiledFilter compiled;
+	};
+	using FilterEntryList = Vector<FilterEntry>;
 
-	// The element this decorator belongs to
 	Element* element;
 
-	// The list of every decorator used by this element in every class.
-	DecoratorHandleList decorators;
+	// The list of decorators and filters used by this element.
+	DecoratorEntryList decorators;
+	DecoratorEntryList mask_images;
+	FilterEntryList filters;
+	FilterEntryList backdrop_filters;
 
 	// If set, a full reload is necessary.
-	bool decorators_dirty = false;
+	bool effects_dirty = false;
 	// If set, element data of all decorators need to be regenerated.
-	bool decorators_data_dirty = false;
+	bool effects_data_dirty = false;
 };
 
 } // namespace Rml

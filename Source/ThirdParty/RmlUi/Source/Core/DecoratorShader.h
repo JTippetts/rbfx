@@ -26,26 +26,54 @@
  *
  */
 
-#ifndef RMLUI_CORE_DECORATORTILEDHORIZONTALINSTANCER_H
-#define RMLUI_CORE_DECORATORTILEDHORIZONTALINSTANCER_H
+#ifndef RMLUI_CORE_DECORATORSHADER_H
+#define RMLUI_CORE_DECORATORSHADER_H
 
-#include "DecoratorTiledInstancer.h"
+#include "../../Include/RmlUi/Core/Decorator.h"
+#include "../../Include/RmlUi/Core/Geometry.h"
+#include "../../Include/RmlUi/Core/ID.h"
+#include "../../Include/RmlUi/Core/Spritesheet.h"
+#include "Pool.h"
 
 namespace Rml {
 
-/**
-    @author Peter Curry
- */
-
-class DecoratorTiledHorizontalInstancer : public DecoratorTiledInstancer {
+class DecoratorShader : public Decorator {
 public:
-	DecoratorTiledHorizontalInstancer();
-	~DecoratorTiledHorizontalInstancer();
+	DecoratorShader();
+	virtual ~DecoratorShader();
 
-	/// Instances a horizontal decorator.
+	bool Initialise(String&& value);
+
+	DecoratorDataHandle GenerateElementData(Element* element, BoxArea paint_area) const override;
+	void ReleaseElementData(DecoratorDataHandle element_data) const override;
+
+	void RenderElement(Element* element, DecoratorDataHandle element_data) const override;
+
+private:
+	String value;
+};
+
+class DecoratorShaderInstancer : public DecoratorInstancer {
+public:
+	DecoratorShaderInstancer();
+	~DecoratorShaderInstancer();
+
 	SharedPtr<Decorator> InstanceDecorator(const String& name, const PropertyDictionary& properties,
 		const DecoratorInstancerInterface& instancer_interface) override;
+
+private:
+	struct PropertyIds {
+		PropertyId value;
+	};
+	PropertyIds ids;
 };
+
+struct ShaderElementData {
+	ShaderElementData(Geometry&& geometry, CompiledShader&& shader) : geometry(std::move(geometry)), shader(std::move(shader)) {}
+	Geometry geometry;
+	CompiledShader shader;
+};
+Pool<ShaderElementData>& GetShaderElementDataPool();
 
 } // namespace Rml
 #endif

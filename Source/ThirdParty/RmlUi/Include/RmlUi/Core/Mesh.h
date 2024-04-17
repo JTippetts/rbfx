@@ -26,26 +26,28 @@
  *
  */
 
-#ifndef RMLUI_CORE_DECORATORTILEDIMAGEINSTANCER_H
-#define RMLUI_CORE_DECORATORTILEDIMAGEINSTANCER_H
+#ifndef RMLUI_CORE_MESH_H
+#define RMLUI_CORE_MESH_H
 
-#include "DecoratorTiledInstancer.h"
+#include "Header.h"
+#include "Texture.h"
+#include "Vertex.h"
 
 namespace Rml {
 
-/**
-    @author Peter Curry
- */
+struct Mesh {
+	Vector<Vertex> vertices;
+	Vector<int> indices;
 
-class DecoratorTiledImageInstancer : public DecoratorTiledInstancer {
-public:
-	DecoratorTiledImageInstancer();
-	~DecoratorTiledImageInstancer();
-
-	/// Instances an image decorator.
-	SharedPtr<Decorator> InstanceDecorator(const String& name, const PropertyDictionary& properties,
-		const DecoratorInstancerInterface& instancer_interface) override;
+	explicit operator bool() const { return !indices.empty(); }
 };
+
+struct TexturedMesh {
+	Mesh mesh;
+	Texture texture;
+};
+
+using TexturedMeshList = Vector<TexturedMesh>;
 
 } // namespace Rml
 #endif

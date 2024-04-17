@@ -26,37 +26,51 @@
  *
  */
 
-#include "DecoratorTiledVerticalInstancer.h"
-#include "DecoratorTiledVertical.h"
+#include "FilterBlur.h"
+#include "../../Include/RmlUi/Core/CompiledFilterShader.h"
+#include "../../Include/RmlUi/Core/Element.h"
+#include "../../Include/RmlUi/Core/PropertyDefinition.h"
+#include "../../Include/RmlUi/Core/PropertyDictionary.h"
+#include "../../Include/RmlUi/Core/RenderManager.h"
 
 namespace Rml {
 
-DecoratorTiledVerticalInstancer::DecoratorTiledVerticalInstancer() : DecoratorTiledInstancer(3)
+bool FilterBlur::Initialise(NumericValue in_radius)
 {
-	RegisterTileProperty("top-image");
-	RegisterTileProperty("bottom-image");
-	RegisterTileProperty("center-image");
-	RegisterShorthand("decorator", "top-image, center-image, bottom-image", ShorthandType::RecursiveCommaSeparated);
+	radius_value = in_radius;
+	return Any(in_radius.unit & Unit::LENGTH);
 }
 
-DecoratorTiledVerticalInstancer::~DecoratorTiledVerticalInstancer() {}
-
-SharedPtr<Decorator> DecoratorTiledVerticalInstancer::InstanceDecorator(const String& /*name*/, const PropertyDictionary& properties,
-	const DecoratorInstancerInterface& instancer_interface)
+CompiledFilter FilterBlur::CompileFilter(Element* element) const
 {
-	constexpr size_t num_tiles = 3;
+	const float radius = element->ResolveLength(radius_value);
+	return element->GetRenderManager()->CompileFilter("blur", Dictionary{{"radius", Variant(radius)}});
+}
 
-	DecoratorTiled::Tile tiles[num_tiles];
-	Texture textures[num_tiles];
+void FilterBlur::ExtendInkOverflow(Element* element, Rectanglef& scissor_region) const
+{
+	const float radius = element->ResolveLength(radius_value);
+	const float blur_extent = 1.5f * Math::Max(radius, 1.f);
+	scissor_region.Extend(blur_extent);
+}
 
-	if (!GetTileProperties(tiles, textures, num_tiles, properties, instancer_interface))
+FilterBlurInstancer::FilterBlurInstancer()
+{
+	ids.radius = RegisterProperty("radius", "0px").AddParser("length").GetId();
+	RegisterShorthand("filter", "radius", ShorthandType::FallThrough);
+}
+
+SharedPtr<Filter> FilterBlurInstancer::InstanceFilter(const String& /*name*/, const PropertyDictionary& properties)
+{
+	const Property* p_radius = properties.GetProperty(ids.radius);
+	if (!p_radius)
 		return nullptr;
 
-	auto decorator = MakeShared<DecoratorTiledVertical>();
-	if (!decorator->Initialise(tiles, textures))
-		return nullptr;
+	auto decorator = MakeShared<FilterBlur>();
+	if (decorator->Initialise(p_radius->GetNumericValue()))
+		return decorator;
 
-	return decorator;
+	return nullptr;
 }
 
 } // namespace Rml

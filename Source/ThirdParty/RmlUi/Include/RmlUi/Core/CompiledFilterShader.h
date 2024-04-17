@@ -26,26 +26,46 @@
  *
  */
 
-#ifndef RMLUI_CORE_DECORATORTILEDVERTICALINSTANCER_H
-#define RMLUI_CORE_DECORATORTILEDVERTICALINSTANCER_H
+#ifndef RMLUI_CORE_COMPILEDFILTERSHADER_H
+#define RMLUI_CORE_COMPILEDFILTERSHADER_H
 
-#include "DecoratorTiledInstancer.h"
+#include "Header.h"
+#include "UniqueRenderResource.h"
 
 namespace Rml {
 
+class RenderManager;
+
 /**
-    @author Peter Curry
+    A compiled filter to be applied during layer pop in its render manager. A unique resource constructed through the render manager.
  */
-
-class DecoratorTiledVerticalInstancer : public DecoratorTiledInstancer {
+class RMLUICORE_API CompiledFilter final : public UniqueRenderResource<CompiledFilter, CompiledFilterHandle, CompiledFilterHandle(0)> {
 public:
-	DecoratorTiledVerticalInstancer();
-	~DecoratorTiledVerticalInstancer();
+	CompiledFilter() = default;
 
-	/// Instances a vertical decorator.
-	SharedPtr<Decorator> InstanceDecorator(const String& name, const PropertyDictionary& properties,
-		const DecoratorInstancerInterface& instancer_interface) override;
+	void AddHandleTo(FilterHandleList& list);
+
+	void Release();
+
+private:
+	CompiledFilter(RenderManager* render_manager, CompiledFilterHandle resource_handle) : UniqueRenderResource(render_manager, resource_handle) {}
+	friend class RenderManager;
+};
+
+/**
+    A compiled shader to be used when rendering geometry. A unique resource constructed through the render manager.
+ */
+class RMLUICORE_API CompiledShader final : public UniqueRenderResource<CompiledShader, CompiledShaderHandle, CompiledShaderHandle(0)> {
+public:
+	CompiledShader() = default;
+
+	void Release();
+
+private:
+	CompiledShader(RenderManager* render_manager, CompiledShaderHandle resource_handle) : UniqueRenderResource(render_manager, resource_handle) {}
+	friend class RenderManager;
 };
 
 } // namespace Rml
+
 #endif

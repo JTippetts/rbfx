@@ -91,9 +91,9 @@ class RmlContextInstancer : public Rml::ContextInstancer
 {
 public:
     /// Create instance of RmlContext.
-    Rml::ContextPtr InstanceContext(const Rml::String& name) override
+    Rml::ContextPtr InstanceContext(const Rml::String& name, Rml::RenderManager *renderManager) override
     {
-        return Rml::ContextPtr(new Detail::RmlContext(name));
+        return Rml::ContextPtr(new Detail::RmlContext(name, renderManager));
     }
     /// Free instance of RmlContext.
     void ReleaseContext(Rml::Context* context) override
@@ -268,7 +268,6 @@ RmlUI::RmlUI(Context* context, const char* name)
     // Initializing first instance of RmlUI, initialize backend library as well.
     if (rmlInstanceCounter.fetch_add(1) == 0)
     {
-        Rml::SetRenderInterface(new Detail::RmlRenderer(context_));
         Rml::SetSystemInterface(new Detail::RmlSystem(context_));
         Rml::SetFileInterface(new Detail::RmlFile(context_));
         Rml::Initialise();
@@ -278,7 +277,10 @@ RmlUI::RmlUI(Context* context, const char* name)
 
         RmlNavigable::Register();
     }
-    rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), ToRmlUi(GetDesiredCanvasSize())));
+    
+    // Each RmlUI object should have unique renderer so instances do not share RenderManagers.
+    rmlRenderer_ = new Detail::RmlRenderer(context_);
+    rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), ToRmlUi(GetDesiredCanvasSize()), rmlRenderer_));
     rmlContext_->SetOwnerSubsystem(this);
 
     if (auto* ui = GetSubsystem<RmlUI>())
@@ -316,17 +318,21 @@ RmlUI::~RmlUI()
             URHO3D_LOGERROR("Removal of RmlUI context {} failed.", rmlContext_->GetName());
     }
     rmlContext_ = nullptr;
+    
+    if(rmlRenderer_ != nullptr)
+    {
+        delete rmlRenderer_;
+        rmlRenderer_ = nullptr;
+    }
 
     if (rmlInstanceCounter.fetch_sub(1) == 1)
     {
         // Freeing last instance of RmlUI, deinitialize backend library.
         Rml::Factory::RegisterEventListenerInstancer(nullptr); // Set to a static object instance because there is no getter to delete it.
-        auto* renderer = Rml::GetRenderInterface();
         auto* system = Rml::GetSystemInterface();
         auto* file = Rml::GetFileInterface();
         Rml::ReleaseTextures();
         Rml::Shutdown();
-        delete renderer;
         delete system;
         delete file;
     }
@@ -694,11 +700,11 @@ void RmlUI::Render()
     }
     renderContext->SetFullViewport();
 
-    if (auto rmlRenderer = dynamic_cast<Detail::RmlRenderer*>(Rml::GetRenderInterface()))
+    if (rmlRenderer_)
     {
-        rmlRenderer->BeginRendering();
+        rmlRenderer_->BeginRendering();
         rmlContext_->Render();
-        rmlRenderer->EndRendering();
+        rmlRenderer_->EndRendering();
     }
 }
 

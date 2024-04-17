@@ -52,13 +52,17 @@ public:
 
     /// Rml::RenderInterface implementation
     /// @{
-    bool GenerateTexture(Rml::TextureHandle& handleOut, const Rml::byte* source, const Rml::Vector2i& size) override;
+    Rml::TextureHandle GenerateTexture(Rml::Span<const Rml::byte> source, Rml::Vector2i size) override;
     void ReleaseTexture(Rml::TextureHandle textureHandle) override;
-    bool LoadTexture(Rml::TextureHandle& textureOut, Rml::Vector2i& sizeOut, const Rml::String& source) override;
+    Rml::TextureHandle LoadTexture(Rml::Vector2i& size, const Rml::String& source) override;
 
-    void RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices, Rml::TextureHandle texture, const Rml::Vector2f& translation) override;
+	Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) override;
+    void RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) override;
+    void ReleaseGeometry(Rml::CompiledGeometryHandle geometry) override;
     void EnableScissorRegion(bool enable) override;
-    void SetScissorRegion(int x, int y, int width, int height) override;
+    void SetScissorRegion(Rml::Rectanglei region) override;
+    void EnableClipMask(bool enable) override;
+    void RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation) override;
     void SetTransform(const Rml::Matrix4f* transform) override;
     /// @}
 

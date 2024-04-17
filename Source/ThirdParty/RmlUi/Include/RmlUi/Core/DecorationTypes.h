@@ -26,34 +26,43 @@
  *
  */
 
-#include "DecoratorTiledImageInstancer.h"
-#include "DecoratorTiledImage.h"
+#ifndef RMLUI_CORE_DECORATIONTYPES_H
+#define RMLUI_CORE_DECORATIONTYPES_H
+
+#include "NumericValue.h"
+#include "Types.h"
 
 namespace Rml {
 
-DecoratorTiledImageInstancer::DecoratorTiledImageInstancer() : DecoratorTiledInstancer(1)
+struct ColorStop {
+	ColourbPremultiplied color;
+	NumericValue position;
+};
+inline bool operator==(const ColorStop& a, const ColorStop& b)
 {
-	RegisterTileProperty("image", true);
-	RegisterShorthand("decorator", "image", ShorthandType::RecursiveRepeat);
+	return a.color == b.color && a.position == b.position;
+}
+inline bool operator!=(const ColorStop& a, const ColorStop& b)
+{
+	return !(a == b);
 }
 
-DecoratorTiledImageInstancer::~DecoratorTiledImageInstancer() {}
-
-SharedPtr<Decorator> DecoratorTiledImageInstancer::InstanceDecorator(const String& /*name*/, const PropertyDictionary& properties,
-	const DecoratorInstancerInterface& instancer_interface)
+struct BoxShadow {
+	ColourbPremultiplied color;
+	NumericValue offset_x, offset_y;
+	NumericValue blur_radius;
+	NumericValue spread_distance;
+	bool inset = false;
+};
+inline bool operator==(const BoxShadow& a, const BoxShadow& b)
 {
-	DecoratorTiled::Tile tile;
-	Texture texture;
-
-	if (!GetTileProperties(&tile, &texture, 1, properties, instancer_interface))
-		return nullptr;
-
-	auto decorator = MakeShared<DecoratorTiledImage>();
-
-	if (!decorator->Initialise(tile, texture))
-		return nullptr;
-
-	return decorator;
+	return a.color == b.color && a.offset_x == b.offset_x && a.offset_y == b.offset_y && a.blur_radius == b.blur_radius &&
+		a.spread_distance == b.spread_distance && a.inset == b.inset;
+}
+inline bool operator!=(const BoxShadow& a, const BoxShadow& b)
+{
+	return !(a == b);
 }
 
 } // namespace Rml
+#endif

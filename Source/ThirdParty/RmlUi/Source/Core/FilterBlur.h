@@ -26,38 +26,39 @@
  *
  */
 
-#ifndef RMLUI_CORE_GEOMETRYDATABASE_H
-#define RMLUI_CORE_GEOMETRYDATABASE_H
+#ifndef RMLUI_CORE_FILTERBLUR_H
+#define RMLUI_CORE_FILTERBLUR_H
 
-#include "../../Include/RmlUi/Core/Types.h"
-#include <stdint.h>
+#include "../../Include/RmlUi/Core/Filter.h"
+#include "../../Include/RmlUi/Core/ID.h"
+#include "../../Include/RmlUi/Core/NumericValue.h"
 
 namespace Rml {
 
-class Geometry;
-using GeometryDatabaseHandle = uint32_t;
+class FilterBlur : public Filter {
+public:
+	bool Initialise(NumericValue radius);
 
-/**
-    The geometry database stores a reference to all active geometry.
+	CompiledFilter CompileFilter(Element* element) const override;
 
-    The intention is for the user to be able to re-compile all geometry in use.
+	void ExtendInkOverflow(Element* element, Rectanglef& scissor_region) const override;
 
-    It is expected that every Insert() call is followed (at some later time) by
-    exactly one Erase() call with the same handle value.
-*/
+private:
+	NumericValue radius_value;
+};
 
-namespace GeometryDatabase {
+class FilterBlurInstancer : public FilterInstancer {
+public:
+	FilterBlurInstancer();
 
-	GeometryDatabaseHandle Insert(Geometry* geometry);
-	void Erase(GeometryDatabaseHandle handle);
+	SharedPtr<Filter> InstanceFilter(const String& name, const PropertyDictionary& properties) override;
 
-	void ReleaseAll();
-
-#ifdef RMLUI_TESTS_ENABLED
-	bool PrepareForTests();
-	bool ListMatchesDatabase(const Vector<Geometry>& geometry_list);
-#endif
-} // namespace GeometryDatabase
+private:
+	struct PropertyIds {
+		PropertyId radius;
+	};
+	PropertyIds ids;
+};
 
 } // namespace Rml
 #endif

@@ -34,6 +34,7 @@
 #include <EASTL/array.h>
 #include <EASTL/functional.h>
 #include <EASTL/list.h>
+#include <EASTL/map.h>
 #include <EASTL/queue.h>
 #include <EASTL/set.h>
 #include <EASTL/shared_ptr.h>
@@ -67,6 +68,8 @@ template<typename T>
 using Queue = eastl::queue<T>;
 template<typename T1, typename T2>
 using Pair = std::pair<T1, T2>;
+template <typename Key, typename Value>
+using StableMap = ea::map<Key, Value>;
 template <typename Key, typename Value>
 using UnorderedMap = eastl::unordered_map< Key, Value >;
 template <typename Key, typename Value>
